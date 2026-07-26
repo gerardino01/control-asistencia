@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Control de Asistencia · Marcaje con Cédula</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<style>
+  /* ==========================================================
+     TOKENS DE DISEÑO
+     Paleta "credencial de acceso": azul noche + ámbar identidad
+     ========================================================== */
+  :root{
+    --noche-900:#0F1B33;
+    --noche-800:#16274A;
+    --noche-700:#1E3260;
+    --ambar-500:#F2A93B;
+    --ambar-400:#F7C36B;
+    --exito-600:#1E8E5A;
+    --exito-500:#26A56A;
+    --error-600:#C6394F;
+    --error-500:#D64550;
+    --hueso-50:#FAF8F3;
+    --hueso-200:#E9E4D8;
+    --tinta-700:#233248;
+    --tinta-500:#5A6B85;
+
+    --fuente-display:'Baloo 2', system-ui, sans-serif;
+    --fuente-texto:'Inter', system-ui, sans-serif;
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{
+    margin:0; padding:0; height:100%;
+    font-family:var(--fuente-texto);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, var(--noche-700) 0%, var(--noche-900) 60%);
+    color:var(--hueso-50);
+    overflow:hidden;
+    user-select:none;
+  }
+
+  /* ---------- Encabezado tipo credencial ---------- */
+  .encabezado{
+    position:relative;
+    padding:22px 24px 16px;
+    text-align:center;
+  }
+  .encabezado .marca{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    font-family:var(--fuente-display);
+    font-weight:700;
+    font-size:clamp(20px, 3vw, 28px);
+    color:var(--ambar-400);
+    letter-spacing:.5px;
+  }
+  .encabezado .marca .punto{
+    width:10px; height:10px; border-radius:50%;
+    background:var(--exito-500);
+    box-shadow:0 0 0 4px rgba(38,165,106,.18);
+  }
+  .encabezado .reloj{
+    margin-top:4px;
+    font-size:clamp(14px, 2vw, 18px);
+    color:var(--tinta-500);
+    font-weight:600;
+  }
+
+  /* ---------- Contenedor principal ---------- */
+  .contenedor{
+    height:calc(100% - 96px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 24px 24px;
+  }
+
+  /* ---------- "Credencial" que enmarca la cámara ---------- */
+  .credencial{
+    position:relative;
+    width:min(92vw, 620px);
+    background:linear-gradient(180deg, var(--noche-800), var(--noche-900));
+    border-radius:32px;
+    padding:28px;
+    box-shadow:
+      0 0 0 1px rgba(242,169,59,.15),
+      0 30px 60px -20px rgba(0,0,0,.6);
+    text-align:center;
+  }
+  /* clip / gancho decorativo arriba, como un carnet colgado */
+  .credencial::before{
+    content:'';
+    position:absolute;
+    top:-16px; left:50%; transform:translateX(-50%);
+    width:64px; height:24px;
+    border-radius:16px;
+    background:var(--ambar-500);
+    box-shadow:0 6px 14px -4px rgba(242,169,59,.5);
+  }
+  .credencial::after{
+    content:'';
+    position:absolute;
+    top:-4px; left:50%; transform:translateX(-50%);
+    width:22px; height:22px;
+    border-radius:50%;
+    background:var(--noche-900);
+    box-shadow:inset 0 0 0 3px var(--noche-700);
+  }
+
+  .instruccion{
+    font-family:var(--fuente-display);
+    font-weight:700;
+    font-size:clamp(22px, 4vw, 30px);
+    margin:6px 0 4px;
+    color:var(--hueso-50);
+  }
+  .subinstruccion{
+    font-size:clamp(14px, 2.4vw, 17px);
+    color:var(--tinta-500);
+    margin-bottom:20px;
+    font-weight:500;
+  }
+
+  /* ---------- Marco de cámara ---------- */
+  .marco-camara{
+    position:relative;
+    width:100%;
+    aspect-ratio:1/1;
+    max-height:52vh;
+    margin:0 auto;
+    border-radius:24px;
+    overflow:hidden;
+    background:#000;
+    border:3px solid var(--ambar-500);
+  }
+  #lector-camara{
+    width:100%; height:100%;
+  }
+  #lector-camara video{
+    object-fit:cover !important;
+    width:100% !important;
+    height:100% !important;
+  }
+  /* esquinas guía estilo escáner */
+  .esquina{
+    position:absolute; width:38px; height:38px;
+    border-color:var(--ambar-400);
+    border-style:solid;
+    z-index:5; pointer-events:none;
+    opacity:.9;
+  }
+  .esquina.tl{ top:12px; left:12px; border-width:5px 0 0 5px; border-radius:10px 0 0 0;}
+  .esquina.tr{ top:12px; right:12px; border-width:5px 5px 0 0; border-radius:0 10px 0 0;}
+  .esquina.bl{ bottom:12px; left:12px; border-width:0 0 5px 5px; border-radius:0 0 0 10px;}
+  .esquina.br{ bottom:12px; right:12px; border-width:0 5px 5px 0; border-radius:0 0 10px 0;}
+
+  .linea-scan{
+    position:absolute; left:8%; right:8%; top:0;
+    height:3px;
+    background:linear-gradient(90deg, transparent, var(--ambar-400), transparent);
+    z-index:6;
+    animation:barrido 2.4s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes barrido{
+    0%{ top:8%; opacity:0; }
+    10%{ opacity:1; }
+    50%{ top:92%; opacity:1; }
+    60%{ opacity:0; }
+    100%{ top:8%; opacity:0; }
+  }
+
+  .estado-camara{
+    margin-top:18px;
+    font-size:clamp(14px, 2.2vw, 16px);
+    color:var(--tinta-500);
+    font-weight:600;
+    min-height:22px;
+  }
+
+  /* ---------- Overlay de PROCESANDO ---------- */
+  .overlay-procesando{
+    position:absolute; inset:0;
+    background:rgba(15,27,51,.92);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:18px;
+    border-radius:24px;
+    z-index:20;
+    opacity:0; pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  .overlay-procesando.activo{ opacity:1; pointer-events:all; }
+  .spinner{
+    width:64px; height:64px;
+    border-radius:50%;
+    border:6px solid rgba(247,195,107,.25);
+    border-top-color:var(--ambar-400);
+    animation:girar 0.8s linear infinite;
+  }
+  @keyframes girar{ to{ transform:rotate(360deg); } }
+  .overlay-procesando span{
+    font-family:var(--fuente-display);
+    font-weight:600;
+    font-size:20px;
+    color:var(--hueso-50);
+  }
+
+  /* ---------- Pantalla de resultado (SUCCESS / ERROR) ---------- */
+  .pantalla-resultado{
+    position:fixed; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:14px;
+    text-align:center;
+    padding:32px;
+    z-index:50;
+    opacity:0;
+    transform:scale(.96);
+    pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .pantalla-resultado.visible{
+    opacity:1; transform:scale(1); pointer-events:all;
+  }
+  .pantalla-resultado.exito{
+    background:radial-gradient(1200px 700px at 50% 0%, var(--exito-500) 0%, var(--exito-600) 55%, #0d5c39 100%);
+  }
+  .pantalla-resultado.error{
+    background:radial-gradient(1200px 700px at 50% 0%, var(--error-500) 0%, var(--error-600) 55%, #7d1e2c 100%);
+  }
+
+  .icono-resultado{
+    width:120px; height:120px;
+    border-radius:50%;
+    background:rgba(255,255,255,.18);
+    display:flex; align-items:center; justify-content:center;
+    border:4px solid rgba(255,255,255,.55);
+    animation:pop .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes pop{
+    0%{ transform:scale(.5); opacity:0; }
+    100%{ transform:scale(1); opacity:1; }
+  }
+  .icono-resultado svg{ width:64px; height:64px; }
+
+  .resultado-nombre{
+    font-family:var(--fuente-display);
+    font-weight:800;
+    font-size:clamp(30px, 6vw, 50px);
+    line-height:1.05;
+    color:#fff;
+    max-width:90vw;
+  }
+  .resultado-tipo{
+    display:inline-block;
+    font-family:var(--fuente-display);
+    font-weight:700;
+    font-size:clamp(18px, 3.2vw, 26px);
+    letter-spacing:1px;
+    background:rgba(255,255,255,.22);
+    padding:10px 28px;
+    border-radius:999px;
+    color:#fff;
+  }
+  .resultado-hora{
+    font-size:clamp(16px, 2.6vw, 20px);
+    color:rgba(255,255,255,.85);
+    font-weight:600;
+  }
+  .resultado-mensaje{
+    font-size:clamp(18px, 3vw, 24px);
+    color:#fff;
+    font-weight:700;
+    max-width:80vw;
+  }
+
+  .barra-progreso{
+    position:absolute; bottom:0; left:0; height:6px;
+    background:rgba(255,255,255,.65);
+    width:100%;
+    transform-origin:left;
+    animation:vaciar 3s linear forwards;
+  }
+  @keyframes vaciar{ from{ transform:scaleX(1);} to{ transform:scaleX(0);} }
+
+  .pie{
+    position:fixed; bottom:10px; left:0; right:0;
+    text-align:center;
+    font-size:12px;
+    color:rgba(255,255,255,.25);
+    letter-spacing:.5px;
+  }
+
+  @media (max-width: 420px){
+    .credencial{ padding:20px; border-radius:24px; }
+    .marco-camara{ max-height:44vh; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="encabezado">
+    <div class="marca"><span class="punto"></span> Control de Asistencia</div>
+    <div class="reloj" id="reloj">--:--:--</div>
+  </header>
+
+  <main class="contenedor">
+    <section class="credencial">
+      <h1 class="instruccion">Acerque su cédula a la cámara</h1>
+      <p class="subinstruccion">Coloque el código de barras dentro del recuadro</p>
+
+      <div class="marco-camara">
+        <div id="lector-camara"></div>
+        <div class="esquina tl"></div>
+        <div class="esquina tr"></div>
+        <div class="esquina bl"></div>
+        <div class="esquina br"></div>
+        <div class="linea-scan" id="lineaScan"></div>
+
+        <div class="overlay-procesando" id="overlayProcesando">
+          <div class="spinner"></div>
+          <span>Procesando...</span>
+        </div>
+      </div>
+
+      <p class="estado-camara" id="estadoCamara">Iniciando cámara…</p>
+    </section>
+  </main>
+
+  <!-- Pantalla de resultado a pantalla completa -->
+  <div class="pantalla-resultado" id="pantallaResultado">
+    <div class="icono-resultado" id="iconoResultado"></div>
+    <div class="resultado-nombre" id="resultadoNombre"></div>
+    <div class="resultado-tipo" id="resultadoTipo"></div>
+    <div class="resultado-hora" id="resultadoHora"></div>
+    <div class="resultado-mensaje" id="resultadoMensaje" style="display:none;"></div>
+    <div class="barra-progreso" id="barraProgreso"></div>
+  </div>
+
+  <div class="pie">Sistema de Asistencia · Lectura por cámara</div>
+
+<script>
+/* =========================================================================
+   CONFIGURACIÓN
+   ========================================================================= */
+// 👉 Reemplace esta URL por la de su implementación de Apps Script
+//    (Implementar > Nueva implementación > Aplicación web > Copiar URL)
+const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbwMEybubG_a-jntTzJJum3dUHDer1wUttv5OvFDMl6ojjnj4Q-zXdG1MVuzR-Yyd26n/exec';
+
+const TIEMPO_RESULTADO_MS = 3000; // 3 segundos en pantalla antes de reiniciar
+
+// Formatos de código de barras/QR que puede traer una cédula costarricense
+// (CODE_128 y PDF_417 son los más comunes en carnés/cédulas físicas; se
+// agrega QR_CODE por si se usa un carné con QR).
+const FORMATOS_SOPORTADOS = [
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.CODE_39,
+  Html5QrcodeSupportedFormats.PDF_417,
+  Html5QrcodeSupportedFormats.QR_CODE,
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.ITF
+];
+
+/* =========================================================================
+   ESTADO Y REFERENCIAS DOM
+   ========================================================================= */
+let lector = null;
+let escaneando = false;   // evita lecturas duplicadas mientras se procesa
+let camaraLista = false;
+
+const elEstadoCamara      = document.getElementById('estadoCamara');
+const elOverlayProcesando = document.getElementById('overlayProcesando');
+const elPantallaResultado = document.getElementById('pantallaResultado');
+const elIconoResultado    = document.getElementById('iconoResultado');
+const elResultadoNombre   = document.getElementById('resultadoNombre');
+const elResultadoTipo     = document.getElementById('resultadoTipo');
+const elResultadoHora     = document.getElementById('resultadoHora');
+const elResultadoMensaje  = document.getElementById('resultadoMensaje');
+const elBarraProgreso     = document.getElementById('barraProgreso');
+const elReloj             = document.getElementById('reloj');
+
+/* =========================================================================
+   RELOJ EN VIVO
+   ========================================================================= */
+function actualizarReloj(){
+  const ahora = new Date();
+  elReloj.textContent = ahora.toLocaleTimeString('es-CR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+setInterval(actualizarReloj, 1000);
+actualizarReloj();
+
+/* =========================================================================
+   SONIDOS (Web Audio API, sin archivos externos)
+   ========================================================================= */
+let contextoAudio = null;
+function obtenerContextoAudio(){
+  if (!contextoAudio) {
+    contextoAudio = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return contextoAudio;
+}
+
+/**
+ * Reproduce un tono simple.
+ * @param {number} frecuencia - Hz de la nota
+ * @param {number} duracionMs - duración en milisegundos
+ * @param {string} tipoOnda - 'sine' | 'square' | 'triangle'
+ * @param {number} inicioMs - retraso antes de iniciar (para encadenar tonos)
+ */
+function reproducirTono(frecuencia, duracionMs, tipoOnda, inicioMs){
+  const ctx = obtenerContextoAudio();
+  const inicio = ctx.currentTime + (inicioMs || 0) / 1000;
+  const oscilador = ctx.createOscillator();
+  const ganancia = ctx.createGain();
+
+  oscilador.type = tipoOnda || 'sine';
+  oscilador.frequency.setValueAtTime(frecuencia, inicio);
+
+  ganancia.gain.setValueAtTime(0.0001, inicio);
+  ganancia.gain.exponentialRampToValueAtTime(0.35, inicio + 0.02);
+  ganancia.gain.exponentialRampToValueAtTime(0.0001, inicio + duracionMs / 1000);
+
+  oscilador.connect(ganancia);
+  ganancia.connect(ctx.destination);
+
+  oscilador.start(inicio);
+  oscilador.stop(inicio + duracionMs / 1000 + 0.02);
+}
+
+function sonidoBeepLectura(){
+  // Beep corto y agudo: confirma que la cámara detectó un código
+  reproducirTono(1600, 90, 'square', 0);
+}
+function sonidoExito(){
+  // Dos notas ascendentes, alegres
+  reproducirTono(880, 120, 'sine', 0);
+  reproducirTono(1318, 180, 'sine', 130);
+}
+function sonidoError(){
+  // Tono grave y sostenido, tipo alerta
+  reproducirTono(220, 260, 'sawtooth', 0);
+  reproducirTono(170, 320, 'sawtooth', 220);
+}
+
+/* =========================================================================
+   ICONOS SVG (check / equis)
+   ========================================================================= */
+const SVG_CHECK = `<svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const SVG_EQUIS  = `<svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+/* =========================================================================
+   INICIALIZACIÓN DEL LECTOR DE CÁMARA
+   ========================================================================= */
+function iniciarLector(){
+  lector = new Html5Qrcode('lector-camara', {
+    formatsToSupport: FORMATOS_SOPORTADOS,
+    verbose:false
+  });
+
+  const config = {
+    fps: 12,
+    qrbox: (viewfinderWidth, viewfinderHeight) => {
+      const tamano = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.75);
+      return { width: tamano, height: tamano };
+    },
+    aspectRatio: 1.0
+  };
+
+  lector.start(
+    { facingMode: 'environment' }, // cámara trasera si existe (tablet/celular)
+    config,
+    onLecturaExitosa,
+    onErrorLecturaFrame // errores "no encontrado en este frame", se ignoran
+  ).then(() => {
+    camaraLista = true;
+    escaneando = false;
+    elEstadoCamara.textContent = 'Listo para escanear';
+  }).catch((err) => {
+    elEstadoCamara.textContent = 'No se pudo acceder a la cámara. Verifique los permisos.';
+    console.error('Error iniciando cámara:', err);
+  });
+}
+
+function onErrorLecturaFrame(_mensaje){
+  // Se dispara constantemente mientras no hay código en pantalla; se ignora.
+}
+
+async function onLecturaExitosa(textoDecodificado, _resultado){
+  if (escaneando) return; // ya se está procesando una lectura, ignorar duplicados
+  escaneando = true;
+
+  sonidoBeepLectura();
+  await pausarCamara();
+  mostrarProcesando(true);
+
+  const cedula = (textoDecodificado || '').trim();
+
+  try {
+    const respuesta = await enviarMarcaje(cedula);
+    manejarRespuesta(respuesta);
+  } catch (error) {
+    console.error('Error al enviar marcaje:', error);
+    manejarRespuesta({
+      status: 'ERROR',
+      message: 'No se pudo conectar con el servidor. Intente de nuevo.'
+    });
+  }
+}
+
+async function pausarCamara(){
+  try {
+    if (lector && camaraLista) {
+      await lector.pause(true);
+    }
+  } catch (e) {
+    console.warn('No se pudo pausar la cámara:', e);
+  }
+}
+
+async function reanudarCamara(){
+  try {
+    if (lector && camaraLista) {
+      await lector.resume();
+    }
+  } catch (e) {
+    console.warn('No se pudo reanudar la cámara:', e);
+  }
+  escaneando = false;
+}
+
+/* =========================================================================
+   COMUNICACIÓN CON EL BACKEND (Google Apps Script)
+   ========================================================================= */
+async function enviarMarcaje(cedula){
+  // Se usa text/plain para evitar el preflight OPTIONS, que Apps Script
+  // no maneja de forma nativa. El backend igual parsea el body como JSON.
+  const respuesta = await fetch(URL_APPS_SCRIPT, {
+    method: 'POST',
+    mode: 'cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ cedula: cedula })
+  });
+
+  if (!respuesta.ok) {
+    throw new Error('Respuesta HTTP no válida: ' + respuesta.status);
+  }
+  return respuesta.json();
+}
+
+/* =========================================================================
+   MANEJO DE RESPUESTA / UI DE RESULTADO
+   ========================================================================= */
+const ETIQUETAS_TIPO = {
+  ENTRADA:          'ENTRADA',
+  INICIO_ALMUERZO:  'INICIO DE ALMUERZO',
+  FIN_ALMUERZO:     'FIN DE ALMUERZO',
+  SALIDA:           'SALIDA',
+  MARCA_EXTRA:      'MARCA REGISTRADA'
+};
+
+function manejarRespuesta(respuesta){
+  mostrarProcesando(false);
+
+  if (respuesta && respuesta.status === 'SUCCESS') {
+    mostrarPantallaExito(respuesta);
+  } else if (respuesta && respuesta.status === 'NOT_FOUND') {
+    mostrarPantallaError('Cédula no registrada', 'Consulte con la persona encargada.');
+  } else {
+    mostrarPantallaError('No se pudo registrar', (respuesta && respuesta.message) || 'Intente de nuevo.');
+  }
+
+  setTimeout(reiniciarInterfaz, TIEMPO_RESULTADO_MS);
+}
+
+function mostrarProcesando(activo){
+  elOverlayProcesando.classList.toggle('activo', activo);
+}
+
+function mostrarPantallaExito(respuesta){
+  sonidoExito();
+
+  elPantallaResultado.classList.remove('error');
+  elPantallaResultado.classList.add('exito');
+  elIconoResultado.innerHTML = SVG_CHECK;
+
+  elResultadoNombre.style.display = 'block';
+  elResultadoTipo.style.display = 'inline-block';
+  elResultadoHora.style.display = 'block';
+  elResultadoMensaje.style.display = 'none';
+
+  elResultadoNombre.textContent = respuesta.nombre || '';
+  elResultadoTipo.textContent = ETIQUETAS_TIPO[respuesta.tipo] || respuesta.tipo || '';
+  elResultadoHora.textContent = 'Hora: ' + (respuesta.hora || '');
+
+  reiniciarBarraProgreso();
+  elPantallaResultado.classList.add('visible');
+}
+
+function mostrarPantallaError(titulo, mensaje){
+  sonidoError();
+
+  elPantallaResultado.classList.remove('exito');
+  elPantallaResultado.classList.add('error');
+  elIconoResultado.innerHTML = SVG_EQUIS;
+
+  elResultadoNombre.style.display = 'block';
+  elResultadoTipo.style.display = 'none';
+  elResultadoHora.style.display = 'none';
+  elResultadoMensaje.style.display = 'block';
+
+  elResultadoNombre.textContent = titulo;
+  elResultadoMensaje.textContent = mensaje;
+
+  reiniciarBarraProgreso();
+  elPantallaResultado.classList.add('visible');
+}
+
+function reiniciarBarraProgreso(){
+  // Reinicia la animación de la barra quitando y re-agregando el elemento
+  const nuevaBarra = elBarraProgreso.cloneNode(true);
+  elBarraProgreso.parentNode.replaceChild(nuevaBarra, elBarraProgreso);
+}
+
+async function reiniciarInterfaz(){
+  elPantallaResultado.classList.remove('visible');
+  elEstadoCamara.textContent = 'Listo para escanear';
+  await reanudarCamara();
+}
+
+/* =========================================================================
+   ARRANQUE
+   ========================================================================= */
+window.addEventListener('load', iniciarLector);
+
+// Algunos navegadores móviles requieren un gesto del usuario para
+// desbloquear el AudioContext; este listener lo garantiza silenciosamente.
+document.addEventListener('click', () => {
+  const ctx = obtenerContextoAudio();
+  if (ctx.state === 'suspended') ctx.resume();
+}, { once:true });
+</script>
+
+</body>
+</html>
