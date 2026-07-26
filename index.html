@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+<!-- Librería para lectura de QR / Código de Barras -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <style>
   :root{
@@ -44,77 +44,81 @@
   }
   .encabezado .reloj{ margin-top:2px; font-size:clamp(13px, 2vw, 16px); color:var(--tinta-500); font-weight:600; }
 
-  /* ---------- Pestañas de modo ---------- */
+  /* Selector de tipo de marcaje */
+  .seccion-tipos{
+    display:flex; justify-content:center; gap:8px;
+    padding:4px 16px 12px; flex-wrap:wrap;
+  }
+  .btn-tipo{
+    font-family:var(--fuente-texto); font-weight:700;
+    font-size:clamp(12px, 1.6vw, 14px);
+    color:var(--hueso-200);
+    background:var(--noche-800);
+    border:2px solid var(--noche-700);
+    padding:8px 14px; border-radius:12px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .btn-tipo.activo{
+    background:var(--ambar-500); color:var(--noche-900); border-color:var(--ambar-500);
+  }
+
+  /* Pestañas para alternar QR vs Teclado */
   .pestanas{
     display:flex; justify-content:center; gap:10px;
-    padding:6px 16px 4px; flex-wrap:wrap;
+    padding:0 16px 8px;
   }
   .pestana{
     font-family:var(--fuente-texto); font-weight:700;
     font-size:clamp(13px, 1.8vw, 15px);
-    color:var(--hueso-200);
-    background:var(--noche-800);
-    border:2px solid var(--noche-700);
-    padding:10px 16px; border-radius:14px;
-    cursor:pointer;
-    display:flex; align-items:center; gap:6px;
-    transition:all .15s ease;
+    color:var(--hueso-200); background:transparent;
+    border:none; border-bottom:3px solid transparent;
+    padding:6px 12px; cursor:pointer; opacity:.6;
   }
   .pestana.activa{
-    background:var(--ambar-500); color:var(--noche-900); border-color:var(--ambar-500);
+    color:var(--ambar-400); border-bottom-color:var(--ambar-400); opacity:1;
   }
 
   .contenedor{
-    height:calc(100% - 128px);
+    height:calc(100% - 170px);
     display:flex; align-items:center; justify-content:center;
     padding:0 20px 16px;
   }
   .vista{ display:none; width:100%; height:100%; align-items:center; justify-content:center; }
   .vista.activa{ display:flex; }
 
-  /* ---------- "Credencial" que enmarca la cámara ---------- */
   .credencial{
     position:relative;
-    width:min(92vw, 620px);
+    width:min(92vw, 560px);
     background:linear-gradient(180deg, var(--noche-800), var(--noche-900));
-    border-radius:32px; padding:24px;
+    border-radius:28px; padding:20px;
     box-shadow:0 0 0 1px rgba(242,169,59,.15), 0 30px 60px -20px rgba(0,0,0,.6);
     text-align:center;
-  }
-  .credencial::before{
-    content:''; position:absolute; top:-16px; left:50%; transform:translateX(-50%);
-    width:64px; height:24px; border-radius:16px; background:var(--ambar-500);
-    box-shadow:0 6px 14px -4px rgba(242,169,59,.5);
-  }
-  .credencial::after{
-    content:''; position:absolute; top:-4px; left:50%; transform:translateX(-50%);
-    width:22px; height:22px; border-radius:50%; background:var(--noche-900);
-    box-shadow:inset 0 0 0 3px var(--noche-700);
   }
 
   .instruccion{
     font-family:var(--fuente-display); font-weight:700;
-    font-size:clamp(20px, 3.6vw, 27px); margin:4px 0 4px; color:var(--hueso-50);
+    font-size:clamp(18px, 3.2vw, 24px); margin:0 0 2px; color:var(--hueso-50);
   }
   .subinstruccion{
-    font-size:clamp(13px, 2.2vw, 16px); color:var(--tinta-500);
-    margin-bottom:16px; font-weight:500;
+    font-size:clamp(12px, 2vw, 14px); color:var(--tinta-500);
+    margin-bottom:12px; font-weight:500;
   }
 
-  /* ---------- Marco de cámara (modo código de barras) ---------- */
+  /* Marco de cámara QR */
   .marco-camara{
-    position:relative; width:100%; aspect-ratio:1/1; max-height:44vh;
-    margin:0 auto; border-radius:24px; overflow:hidden; background:#000;
+    position:relative; width:100%; aspect-ratio:1/1; max-height:36vh;
+    margin:0 auto; border-radius:20px; overflow:hidden; background:#000;
     border:3px solid var(--ambar-500);
   }
   #lector-camara{ width:100%; height:100%; }
   #lector-camara video{ object-fit:cover !important; width:100% !important; height:100% !important; }
 
-  .esquina{ position:absolute; width:34px; height:34px; border-color:var(--ambar-400); border-style:solid; z-index:5; pointer-events:none; opacity:.9; }
-  .esquina.tl{ top:10px; left:10px; border-width:5px 0 0 5px; border-radius:10px 0 0 0;}
-  .esquina.tr{ top:10px; right:10px; border-width:5px 5px 0 0; border-radius:0 10px 0 0;}
-  .esquina.bl{ bottom:10px; left:10px; border-width:0 0 5px 5px; border-radius:0 0 0 10px;}
-  .esquina.br{ bottom:10px; right:10px; border-width:0 5px 5px 0; border-radius:0 0 10px 0;}
+  .esquina{ position:absolute; width:28px; height:28px; border-color:var(--ambar-400); border-style:solid; z-index:5; pointer-events:none; opacity:.9; }
+  .esquina.tl{ top:10px; left:10px; border-width:4px 0 0 4px; border-radius:8px 0 0 0;}
+  .esquina.tr{ top:10px; right:10px; border-width:4px 4px 0 0; border-radius:0 8px 0 0;}
+  .esquina.bl{ bottom:10px; left:10px; border-width:0 0 4px 4px; border-radius:0 0 0 8px;}
+  .esquina.br{ bottom:10px; right:10px; border-width:0 4px 4px 0; border-radius:0 0 8px 0;}
 
   .linea-scan{
     position:absolute; left:8%; right:8%; top:0; height:3px;
@@ -123,93 +127,42 @@
   }
   @keyframes barrido{ 0%{top:8%;opacity:0;} 10%{opacity:1;} 50%{top:92%;opacity:1;} 60%{opacity:0;} 100%{top:8%;opacity:0;} }
 
-  .estado-camara{ margin-top:14px; font-size:clamp(13px, 2vw, 15px); color:var(--tinta-500); font-weight:600; min-height:20px; }
-
-  /* ---------- Marco de cámara (modo MRZ) — apaisado, como el reverso de la cédula ---------- */
-  .marco-mrz{
-    position:relative; width:100%; aspect-ratio:1.586/1; max-height:38vh;
-    margin:0 auto; border-radius:18px; overflow:hidden; background:#000;
-    border:3px solid var(--ambar-500);
-  }
-  #video-mrz{ width:100%; height:100%; object-fit:cover; }
-  .guia-mrz{
-    position:absolute; left:6%; right:6%; bottom:8%; height:34%;
-    border:3px dashed var(--ambar-400); border-radius:8px;
-    background:rgba(242,169,59,.08);
-    display:flex; align-items:flex-end; justify-content:center;
-    pointer-events:none;
-  }
-  .guia-mrz span{
-    font-size:11px; font-weight:700; color:var(--ambar-400);
-    background:rgba(15,27,51,.75); padding:2px 8px; border-radius:6px; margin-bottom:-14px;
-  }
+  .estado-camara{ margin-top:10px; font-size:13px; color:var(--tinta-500); font-weight:600; min-height:18px; }
 
   .boton-grande{
-    margin-top:16px; width:100%;
+    margin-top:12px; width:100%;
     font-family:var(--fuente-display); font-weight:700;
-    font-size:clamp(16px, 3vw, 20px);
-    padding:16px; border-radius:16px; border:none;
+    font-size:clamp(16px, 2.8vw, 18px);
+    padding:14px; border-radius:14px; border:none;
     background:var(--ambar-500); color:var(--noche-900);
-    cursor:pointer;
-    box-shadow:0 8px 20px -8px rgba(242,169,59,.6);
-    transition:transform .1s ease;
+    cursor:pointer; transition:transform .1s ease;
   }
   .boton-grande:active{ transform:scale(.97); }
-  .boton-grande:disabled{ opacity:.5; }
-  .boton-secundario{
-    margin-top:10px; width:100%;
-    font-family:var(--fuente-texto); font-weight:700;
-    font-size:clamp(13px, 2.4vw, 15px);
-    padding:12px; border-radius:14px;
-    background:transparent; color:var(--hueso-200);
-    border:2px solid var(--noche-700); cursor:pointer;
-  }
 
-  /* ---------- Teclado numérico ---------- */
-  .pantalla-teclado{ font-family:var(--fuente-display); font-weight:700; font-size:clamp(28px, 6vw, 40px); letter-spacing:3px; background:var(--noche-900); border:2px solid var(--noche-700); border-radius:16px; padding:16px; margin-bottom:14px; min-height:60px; color:var(--hueso-50); }
-  .pantalla-teclado.vacio{ color:var(--tinta-500); font-size:clamp(16px,3vw,20px); }
-  .grid-teclado{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  /* Teclado numérico */
+  .pantalla-teclado{ font-family:var(--fuente-display); font-weight:700; font-size:clamp(24px, 5vw, 34px); letter-spacing:2px; background:var(--noche-900); border:2px solid var(--noche-700); border-radius:14px; padding:10px; margin-bottom:10px; min-height:52px; color:var(--hueso-50); }
+  .pantalla-teclado.vacio{ color:var(--tinta-500); font-size:clamp(15px,2.5vw,18px); }
+  .grid-teclado{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
   .tecla{
-    font-family:var(--fuente-display); font-weight:700; font-size:clamp(22px,4vw,30px);
-    padding:16px 0; border-radius:14px; border:none;
+    font-family:var(--fuente-display); font-weight:700; font-size:clamp(20px,3.5vw,26px);
+    padding:12px 0; border-radius:12px; border:none;
     background:var(--noche-700); color:var(--hueso-50); cursor:pointer;
   }
   .tecla:active{ background:var(--ambar-500); color:var(--noche-900); }
-  .tecla.accion{ font-size:clamp(14px,2.4vw,17px); background:var(--noche-800); color:var(--tinta-500); }
+  .tecla.accion{ font-size:clamp(13px,2vw,15px); background:var(--noche-800); color:var(--tinta-500); }
 
-  /* ---------- Overlay procesando ---------- */
+  /* Overlay procesando */
   .overlay-procesando{
     position:absolute; inset:0; background:rgba(15,27,51,.92);
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
-    border-radius:24px; z-index:20; opacity:0; pointer-events:none; transition:opacity .2s ease;
+    border-radius:20px; z-index:20; opacity:0; pointer-events:none; transition:opacity .2s ease;
   }
   .overlay-procesando.activo{ opacity:1; pointer-events:all; }
-  .spinner{ width:56px; height:56px; border-radius:50%; border:6px solid rgba(247,195,107,.25); border-top-color:var(--ambar-400); animation:girar .8s linear infinite; }
+  .spinner{ width:48px; height:48px; border-radius:50%; border:5px solid rgba(247,195,107,.25); border-top-color:var(--ambar-400); animation:girar .8s linear infinite; }
   @keyframes girar{ to{ transform:rotate(360deg); } }
-  .overlay-procesando span{ font-family:var(--fuente-display); font-weight:600; font-size:18px; color:var(--hueso-50); text-align:center; padding:0 20px; }
+  .overlay-procesando span{ font-family:var(--fuente-display); font-weight:600; font-size:16px; color:var(--hueso-50); text-align:center; }
 
-  /* ---------- Pantalla de confirmación MRZ ---------- */
-  .pantalla-confirmacion{
-    position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:14px; text-align:center; padding:32px; z-index:60;
-    background:radial-gradient(1200px 700px at 50% 0%, var(--ambar-500) 0%, #b9791c 60%, #7a4d0f 100%);
-    opacity:0; transform:scale(.96); pointer-events:none; transition:opacity .25s ease, transform .25s ease;
-  }
-  .pantalla-confirmacion.visible{ opacity:1; transform:scale(1); pointer-events:all; }
-  .pantalla-confirmacion h2{ font-family:var(--fuente-display); font-size:clamp(20px,3.4vw,26px); color:var(--noche-900); margin:0; }
-  .cedula-detectada{
-    font-family:var(--fuente-display); font-weight:800; font-size:clamp(32px,6vw,48px);
-    background:rgba(255,255,255,.35); padding:12px 28px; border-radius:16px; color:var(--noche-900); letter-spacing:2px;
-  }
-  .fila-botones{ display:flex; gap:12px; width:min(90vw, 460px); margin-top:10px; }
-  .fila-botones button{
-    flex:1; font-family:var(--fuente-display); font-weight:700; font-size:clamp(14px,2.6vw,17px);
-    padding:16px 10px; border-radius:14px; border:none; cursor:pointer;
-  }
-  .btn-confirmar{ background:var(--exito-500); color:#fff; }
-  .btn-reintentar{ background:rgba(15,27,51,.85); color:#fff; }
-
-  /* ---------- Pantalla de resultado (SUCCESS / ERROR) ---------- */
+  /* Pantalla de resultado */
   .pantalla-resultado{
     position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:14px; text-align:center; padding:32px; z-index:50;
@@ -220,29 +173,22 @@
   .pantalla-resultado.error{ background:radial-gradient(1200px 700px at 50% 0%, var(--error-500) 0%, var(--error-600) 55%, #7d1e2c 100%); }
 
   .icono-resultado{
-    width:110px; height:110px; border-radius:50%; background:rgba(255,255,255,.18);
+    width:100px; height:100px; border-radius:50%; background:rgba(255,255,255,.18);
     display:flex; align-items:center; justify-content:center; border:4px solid rgba(255,255,255,.55);
     animation:pop .35s cubic-bezier(.34,1.56,.64,1);
   }
   @keyframes pop{ 0%{transform:scale(.5);opacity:0;} 100%{transform:scale(1);opacity:1;} }
-  .icono-resultado svg{ width:60px; height:60px; }
+  .icono-resultado svg{ width:50px; height:50px; }
 
-  .resultado-nombre{ font-family:var(--fuente-display); font-weight:800; font-size:clamp(28px,5.4vw,46px); line-height:1.05; color:#fff; max-width:90vw; }
-  .resultado-tipo{ display:inline-block; font-family:var(--fuente-display); font-weight:700; font-size:clamp(16px,3vw,24px); letter-spacing:1px; background:rgba(255,255,255,.22); padding:9px 26px; border-radius:999px; color:#fff; }
-  .resultado-hora{ font-size:clamp(15px,2.4vw,19px); color:rgba(255,255,255,.85); font-weight:600; }
-  .resultado-mensaje{ font-size:clamp(17px,2.8vw,22px); color:#fff; font-weight:700; max-width:80vw; }
+  .resultado-nombre{ font-family:var(--fuente-display); font-weight:800; font-size:clamp(26px,5vw,42px); line-height:1.05; color:#fff; }
+  .resultado-tipo{ display:inline-block; font-family:var(--fuente-display); font-weight:700; font-size:clamp(15px,2.8vw,22px); letter-spacing:1px; background:rgba(255,255,255,.22); padding:8px 24px; border-radius:999px; color:#fff; }
+  .resultado-hora{ font-size:clamp(14px,2.2vw,18px); color:rgba(255,255,255,.85); font-weight:600; }
+  .resultado-mensaje{ font-size:clamp(16px,2.5vw,20px); color:#fff; font-weight:700; }
 
   .barra-progreso{ position:absolute; bottom:0; left:0; height:6px; background:rgba(255,255,255,.65); width:100%; transform-origin:left; animation:vaciar 3s linear forwards; }
   @keyframes vaciar{ from{transform:scaleX(1);} to{transform:scaleX(0);} }
 
-  .pie{ position:fixed; bottom:8px; left:0; right:0; text-align:center; font-size:11px; color:rgba(255,255,255,.25); letter-spacing:.5px; }
-
-  canvas{ display:none; }
-
-  @media (max-width: 420px){
-    .credencial{ padding:18px; border-radius:24px; }
-    .marco-camara{ max-height:36vh; }
-  }
+  .pie{ position:fixed; bottom:8px; left:0; right:0; text-align:center; font-size:11px; color:rgba(255,255,255,.25); }
 </style>
 </head>
 <body>
@@ -252,54 +198,44 @@
     <div class="reloj" id="reloj">--:--:--</div>
   </header>
 
+  <!-- Selector para el tipo de marcaje -->
+  <div class="seccion-tipos">
+    <button class="btn-tipo activo" onclick="seleccionarTipo('ENTRADA', this)">ENTRADA</button>
+    <button class="btn-tipo" onclick="seleccionarTipo('INICIO_ALMUERZO', this)">INICIO ALMUERZO</button>
+    <button class="btn-tipo" onclick="seleccionarTipo('FIN_ALMUERZO', this)">FIN ALMUERZO</button>
+    <button class="btn-tipo" onclick="seleccionarTipo('SALIDA', this)">SALIDA</button>
+  </div>
+
   <nav class="pestanas">
-    <button class="pestana activa" id="tabBarcode" onclick="cambiarModo('barcode')">📇 Cédula anterior</button>
-    <button class="pestana" id="tabMrz" onclick="cambiarModo('mrz')">🆔 Cédula nueva</button>
-    <button class="pestana" id="tabTeclado" onclick="cambiarModo('teclado')">⌨️ Escribir número</button>
+    <button class="pestana activa" id="tabQr" onclick="cambiarModo('qr')">📷 Código QR</button>
+    <button class="pestana" id="tabTeclado" onclick="cambiarModo('teclado')">⌨️ Digitar Cédula</button>
   </nav>
 
   <main class="contenedor">
 
-    <!-- ===================== MODO 1: CÓDIGO DE BARRAS (cédula anterior) ===================== -->
-    <section class="vista activa" id="vistaBarcode">
+    <!-- MODO 1: LECTOR QR -->
+    <section class="vista activa" id="vistaQr">
       <div class="credencial">
-        <h1 class="instruccion">Acerque su cédula a la cámara</h1>
-        <p class="subinstruccion">Coloque el código de barras dentro del recuadro</p>
+        <h1 class="instruccion">Escanee su código QR</h1>
+        <p class="subinstruccion">Alinee el código dentro del recuadro</p>
         <div class="marco-camara">
           <div id="lector-camara"></div>
           <div class="esquina tl"></div><div class="esquina tr"></div>
           <div class="esquina bl"></div><div class="esquina br"></div>
           <div class="linea-scan"></div>
-          <div class="overlay-procesando" id="overlayProcesandoBarcode">
+          <div class="overlay-procesando" id="overlayProcesando">
             <div class="spinner"></div><span>Procesando...</span>
           </div>
         </div>
-        <p class="estado-camara" id="estadoCamaraBarcode">Iniciando cámara…</p>
+        <p class="estado-camara" id="estadoCamara">Iniciando cámara…</p>
       </div>
     </section>
 
-    <!-- ===================== MODO 2: MRZ (cédula nueva) ===================== -->
-    <section class="vista" id="vistaMrz">
-      <div class="credencial">
-        <h1 class="instruccion">Fotografíe el reverso de su cédula</h1>
-        <p class="subinstruccion">Alinee las 3 líneas de texto inferiores dentro del recuadro</p>
-        <div class="marco-mrz">
-          <video id="video-mrz" autoplay playsinline muted></video>
-          <div class="guia-mrz"><span>ZONA MRZ</span></div>
-          <div class="overlay-procesando" id="overlayProcesandoMrz">
-            <div class="spinner"></div><span id="mensajeProcesandoMrz">Leyendo cédula...</span>
-          </div>
-        </div>
-        <button class="boton-grande" id="btnCapturarMrz" onclick="capturarMrz()">📸 Capturar</button>
-        <p class="estado-camara" id="estadoCamaraMrz">Iniciando cámara…</p>
-      </div>
-    </section>
-
-    <!-- ===================== MODO 3: TECLADO NUMÉRICO ===================== -->
+    <!-- MODO 2: TECLADO NUMÉRICO -->
     <section class="vista" id="vistaTeclado">
       <div class="credencial">
         <h1 class="instruccion">Escriba su número de cédula</h1>
-        <p class="subinstruccion">Use el teclado y presione Marcar</p>
+        <p class="subinstruccion">Ingrese los dígitos y presione Marcar</p>
         <div class="pantalla-teclado vacio" id="pantallaTeclado">Ej. 1-2345-6789</div>
         <div class="grid-teclado">
           <button class="tecla" onclick="teclaPresionada('1')">1</button>
@@ -321,18 +257,7 @@
 
   </main>
 
-  <!-- Confirmación de lectura MRZ -->
-  <div class="pantalla-confirmacion" id="pantallaConfirmacion">
-    <h2>¿Es correcto este número de cédula?</h2>
-    <div class="cedula-detectada" id="cedulaDetectada">—</div>
-    <div class="fila-botones">
-      <button class="btn-reintentar" onclick="reintentarMrz()">🔄 Volver a tomar foto</button>
-      <button class="btn-confirmar" onclick="confirmarMrz()">✔ Sí, marcar</button>
-    </div>
-    <button class="boton-secundario" style="max-width:460px" onclick="irATeclado()">Escribir el número manualmente</button>
-  </div>
-
-  <!-- Pantalla de resultado a pantalla completa -->
+  <!-- Pantalla de resultado -->
   <div class="pantalla-resultado" id="pantallaResultado">
     <div class="icono-resultado" id="iconoResultado"></div>
     <div class="resultado-nombre" id="resultadoNombre"></div>
@@ -342,36 +267,20 @@
     <div class="barra-progreso" id="barraProgreso"></div>
   </div>
 
-  <canvas id="lienzoMrz"></canvas>
-  <div class="pie">Sistema de Asistencia · Código de barras · MRZ · Teclado</div>
+  <div class="pie">Sistema de Asistencia · QR & Teclado</div>
 
 <script>
 /* =========================================================================
-   CONFIGURACIÓN
+   CONFIGURACIÓN Y ESTADO
    ========================================================================= */
 const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/exec';
 const TIEMPO_RESULTADO_MS = 3000;
 
-const FORMATOS_SOPORTADOS = [
-  Html5QrcodeSupportedFormats.CODE_128,
-  Html5QrcodeSupportedFormats.CODE_39,
-  Html5QrcodeSupportedFormats.PDF_417,
-  Html5QrcodeSupportedFormats.QR_CODE,
-  Html5QrcodeSupportedFormats.EAN_13,
-  Html5QrcodeSupportedFormats.ITF
-];
-
-/* =========================================================================
-   ESTADO GENERAL Y REFERENCIAS DOM
-   ========================================================================= */
-let modoActual = 'barcode';
-let lectorBarcode = null;
-let camaraBarcodeLista = false;
-let escaneandoBarcode = false;
-
-let streamMrz = null;
-let cedulaCandidataMrz = null;
-
+let tipoSeleccionado = 'ENTRADA';
+let modoActual = 'qr';
+let lectorQr = null;
+let camaraLista = false;
+let escaneando = false;
 let cedulaTecladoActual = '';
 
 const elReloj = document.getElementById('reloj');
@@ -384,37 +293,52 @@ const elResultadoMensaje  = document.getElementById('resultadoMensaje');
 const elBarraProgreso     = document.getElementById('barraProgreso');
 
 /* =========================================================================
-   RELOJ
+   SELECCIÓN DE TIPO Y MODO
+   ========================================================================= */
+function seleccionarTipo(tipo, boton){
+  tipoSeleccionado = tipo;
+  document.querySelectorAll('.btn-tipo').forEach(b => b.classList.remove('activo'));
+  boton.classList.add('activo');
+}
+
+function cambiarModo(modo){
+  if (modo === modoActual) return;
+
+  document.getElementById('vistaQr').classList.toggle('activa', modo === 'qr');
+  document.getElementById('vistaTeclado').classList.toggle('activa', modo === 'teclado');
+
+  document.getElementById('tabQr').classList.toggle('activa', modo === 'qr');
+  document.getElementById('tabTeclado').classList.toggle('activa', modo === 'teclado');
+
+  modoActual = modo;
+
+  if (modo === 'qr') reanudarCamara();
+  else pausarCamara();
+}
+
+/* =========================================================================
+   RELOJ Y SONIDOS
    ========================================================================= */
 function actualizarReloj(){
-  const ahora = new Date();
-  elReloj.textContent = ahora.toLocaleTimeString('es-CR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  elReloj.textContent = new Date().toLocaleTimeString('es-CR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 }
 setInterval(actualizarReloj, 1000);
 actualizarReloj();
 
-/* =========================================================================
-   SONIDOS (Web Audio API)
-   ========================================================================= */
 let contextoAudio = null;
-function obtenerContextoAudio(){
-  if (!contextoAudio) contextoAudio = new (window.AudioContext || window.webkitAudioContext)();
-  return contextoAudio;
-}
 function reproducirTono(frecuencia, duracionMs, tipoOnda, inicioMs){
-  const ctx = obtenerContextoAudio();
-  const inicio = ctx.currentTime + (inicioMs || 0) / 1000;
-  const osc = ctx.createOscillator();
-  const gan = ctx.createGain();
+  if (!contextoAudio) contextoAudio = new (window.AudioContext || window.webkitAudioContext)();
+  const inicio = contextoAudio.currentTime + (inicioMs || 0) / 1000;
+  const osc = contextoAudio.createOscillator();
+  const gan = contextoAudio.createGain();
   osc.type = tipoOnda || 'sine';
   osc.frequency.setValueAtTime(frecuencia, inicio);
   gan.gain.setValueAtTime(0.0001, inicio);
   gan.gain.exponentialRampToValueAtTime(0.35, inicio + 0.02);
   gan.gain.exponentialRampToValueAtTime(0.0001, inicio + duracionMs / 1000);
-  osc.connect(gan); gan.connect(ctx.destination);
+  osc.connect(gan); gan.connect(contextoAudio.destination);
   osc.start(inicio); osc.stop(inicio + duracionMs / 1000 + 0.02);
 }
-function sonidoBeepLectura(){ reproducirTono(1600, 90, 'square', 0); }
 function sonidoExito(){ reproducirTono(880, 120, 'sine', 0); reproducirTono(1318, 180, 'sine', 130); }
 function sonidoError(){ reproducirTono(220, 260, 'sawtooth', 0); reproducirTono(170, 320, 'sawtooth', 220); }
 
@@ -422,297 +346,41 @@ const SVG_CHECK = `<svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7"
 const SVG_EQUIS  = `<svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 /* =========================================================================
-   CAMBIO DE MODO / PESTAÑAS
+   LECTOR QR
    ========================================================================= */
-function cambiarModo(modo){
-  if (modo === modoActual) return;
+function iniciarLectorQr(){
+  lectorQr = new Html5Qrcode('lector-camara', { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], verbose:false });
+  const config = { fps: 12, qrbox: (w, h) => { const t = Math.floor(Math.min(w, h) * 0.75); return { width: t, height: t }; }, aspectRatio: 1.0 };
 
-  document.getElementById('vistaBarcode').classList.toggle('activa', modo === 'barcode');
-  document.getElementById('vistaMrz').classList.toggle('activa', modo === 'mrz');
-  document.getElementById('vistaTeclado').classList.toggle('activa', modo === 'teclado');
-
-  document.getElementById('tabBarcode').classList.toggle('activa', modo === 'barcode');
-  document.getElementById('tabMrz').classList.toggle('activa', modo === 'mrz');
-  document.getElementById('tabTeclado').classList.toggle('activa', modo === 'teclado');
-
-  // Apagar cámara del modo que se abandona, para no dejar dos streams activos
-  if (modoActual === 'barcode') pausarCamaraBarcode();
-  if (modoActual === 'mrz') detenerCamaraMrz();
-
-  modoActual = modo;
-
-  if (modo === 'barcode') reanudarCamaraBarcode();
-  if (modo === 'mrz') iniciarCamaraMrz();
-  if (modo === 'teclado') limpiarTeclado();
-}
-
-/* =========================================================================
-   MODO 1 · CÓDIGO DE BARRAS (cédula anterior)
-   ========================================================================= */
-function iniciarLectorBarcode(){
-  lectorBarcode = new Html5Qrcode('lector-camara', { formatsToSupport: FORMATOS_SOPORTADOS, verbose:false });
-  const config = {
-    fps: 12,
-    qrbox: (w, h) => { const t = Math.floor(Math.min(w, h) * 0.75); return { width: t, height: t }; },
-    aspectRatio: 1.0
-  };
-  lectorBarcode.start({ facingMode:'environment' }, config, onLecturaBarcodeExitosa, () => {})
+  lectorQr.start({ facingMode:'environment' }, config, onLecturaExitosa, () => {})
     .then(() => {
-      camaraBarcodeLista = true; escaneandoBarcode = false;
-      document.getElementById('estadoCamaraBarcode').textContent = 'Listo para escanear';
+      camaraLista = true;
+      document.getElementById('estadoCamara').textContent = 'Listo para escanear QR';
     })
-    .catch((err) => {
-      document.getElementById('estadoCamaraBarcode').textContent = 'No se pudo acceder a la cámara.';
-      console.error('Error cámara barcode:', err);
+    .catch(err => {
+      document.getElementById('estadoCamara').textContent = 'No se pudo acceder a la cámara.';
     });
 }
 
-async function onLecturaBarcodeExitosa(texto){
-  if (escaneandoBarcode || modoActual !== 'barcode') return;
-  escaneandoBarcode = true;
-  sonidoBeepLectura();
-  await pausarCamaraBarcode();
-  mostrarOverlay('overlayProcesandoBarcode', true);
+async function onLecturaExitosa(texto){
+  if (escaneando || modoActual !== 'qr') return;
+  escaneando = true;
+  await pausarCamara();
+  mostrarOverlay(true);
 
   try {
     const respuesta = await enviarMarcaje((texto || '').trim());
-    manejarRespuesta(respuesta, () => mostrarOverlay('overlayProcesandoBarcode', false), reanudarCamaraBarcode);
+    manejarRespuesta(respuesta, () => mostrarOverlay(false), reanudarCamara);
   } catch (error) {
-    console.error(error);
-    manejarRespuesta({ status:'ERROR', message:'No se pudo conectar con el servidor.' },
-      () => mostrarOverlay('overlayProcesandoBarcode', false), reanudarCamaraBarcode);
+    manejarRespuesta({ status:'ERROR', message:'No se pudo conectar con el servidor.' }, () => mostrarOverlay(false), reanudarCamara);
   }
 }
 
-async function pausarCamaraBarcode(){
-  try { if (lectorBarcode && camaraBarcodeLista) await lectorBarcode.pause(true); }
-  catch(e){ console.warn(e); }
-}
-async function reanudarCamaraBarcode(){
-  try { if (lectorBarcode && camaraBarcodeLista) await lectorBarcode.resume(); }
-  catch(e){ console.warn(e); }
-  escaneandoBarcode = false;
-}
+async function pausarCamara(){ try { if (lectorQr && camaraLista) await lectorQr.pause(true); } catch(e){} }
+async function reanudarCamara(){ try { if (lectorQr && camaraLista) await lectorQr.resume(); } catch(e){} escaneando = false; }
 
 /* =========================================================================
-   MODO 2 · MRZ (cédula nueva) — captura + OCR + validación + confirmación
-   ========================================================================= */
-async function iniciarCamaraMrz(){
-  const video = document.getElementById('video-mrz');
-  document.getElementById('estadoCamaraMrz').textContent = 'Iniciando cámara…';
-  try {
-    streamMrz = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width:{ ideal:1920 }, height:{ ideal:1080 } }
-    });
-    video.srcObject = streamMrz;
-    document.getElementById('estadoCamaraMrz').textContent = 'Listo. Alinee el reverso y capture.';
-  } catch (err) {
-    document.getElementById('estadoCamaraMrz').textContent = 'No se pudo acceder a la cámara.';
-    console.error('Error cámara MRZ:', err);
-  }
-}
-function detenerCamaraMrz(){
-  if (streamMrz) { streamMrz.getTracks().forEach(t => t.stop()); streamMrz = null; }
-}
-
-async function capturarMrz(){
-  const video = document.getElementById('video-mrz');
-  if (!video.videoWidth) return;
-
-  document.getElementById('btnCapturarMrz').disabled = true;
-  document.getElementById('mensajeProcesandoMrz').textContent = 'Leyendo cédula...';
-  mostrarOverlay('overlayProcesandoMrz', true);
-
-  try {
-    const canvasProcesado = recortarYPreprocesarMrz(video);
-    const textoOcr = await ejecutarOcr(canvasProcesado);
-    const mrz = extraerMrz(textoOcr);
-
-    if (!mrz) {
-      throw new Error('No se detectaron las 3 líneas de la MRZ.');
-    }
-
-    cedulaCandidataMrz = mrz.cedula;
-    mostrarConfirmacionMrz(mrz);
-  } catch (error) {
-    console.error('Error OCR/MRZ:', error);
-    document.getElementById('estadoCamaraMrz').textContent = 'No se pudo leer. Mejore la luz/enfoque e intente de nuevo, o escriba el número.';
-    sonidoError();
-  } finally {
-    mostrarOverlay('overlayProcesandoMrz', false);
-    document.getElementById('btnCapturarMrz').disabled = false;
-  }
-}
-
-/**
- * Recorta la zona guiada en pantalla (rectángulo "ZONA MRZ") de la imagen
- * de video a resolución nativa, y aplica escala de grises + umbral para
- * mejorar la precisión del OCR sobre la fuente OCR-B de la MRZ.
- */
-function recortarYPreprocesarMrz(video){
-  const guia = document.querySelector('.guia-mrz');
-  const marco = document.querySelector('.marco-mrz');
-  const rectMarco = marco.getBoundingClientRect();
-  const rectGuia = guia.getBoundingClientRect();
-
-  // Proporción de la guía respecto al marco visible (0..1)
-  const propX = (rectGuia.left - rectMarco.left) / rectMarco.width;
-  const propY = (rectGuia.top - rectMarco.top) / rectMarco.height;
-  const propW = rectGuia.width / rectMarco.width;
-  const propH = rectGuia.height / rectMarco.height;
-
-  const vw = video.videoWidth, vh = video.videoHeight;
-  // El video se muestra con object-fit:cover, así que el recorte visible
-  // puede no coincidir 1:1 con el frame nativo; se aproxima usando el
-  // mismo porcentaje sobre el frame completo (suficiente en la práctica
-  // porque la guía ya le pide al usuario encuadrar la MRZ dentro de ella).
-  const sx = Math.max(0, propX * vw);
-  const sy = Math.max(0, propY * vh);
-  const sw = Math.min(vw - sx, propW * vw);
-  const sh = Math.min(vh - sy, propH * vh);
-
-  const factorEscala = 3; // ampliar para dar más resolución al OCR
-  const lienzo = document.getElementById('lienzoMrz');
-  lienzo.width = sw * factorEscala;
-  lienzo.height = sh * factorEscala;
-  const ctx = lienzo.getContext('2d');
-  ctx.drawImage(video, sx, sy, sw, sh, 0, 0, lienzo.width, lienzo.height);
-
-  // Escala de grises + umbral simple (mejora el contraste del texto OCR-B)
-  const imagen = ctx.getImageData(0, 0, lienzo.width, lienzo.height);
-  const datos = imagen.data;
-  let sumaLuminancia = 0;
-  for (let i = 0; i < datos.length; i += 4) {
-    const gris = 0.299*datos[i] + 0.587*datos[i+1] + 0.114*datos[i+2];
-    sumaLuminancia += gris;
-  }
-  const promedio = sumaLuminancia / (datos.length / 4);
-  const umbral = promedio * 0.85;
-
-  for (let i = 0; i < datos.length; i += 4) {
-    const gris = 0.299*datos[i] + 0.587*datos[i+1] + 0.114*datos[i+2];
-    const valor = gris < umbral ? 0 : 255;
-    datos[i] = datos[i+1] = datos[i+2] = valor;
-  }
-  ctx.putImageData(imagen, 0, 0);
-  return lienzo;
-}
-
-async function ejecutarOcr(lienzo){
-  const resultado = await Tesseract.recognize(lienzo, 'eng', {
-    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<',
-    tessedit_pageseg_mode: 6 // bloque uniforme de texto
-  });
-  return resultado.data.text || '';
-}
-
-/* -------------------- Parseo y validación MRZ (TD1, ICAO 9303) -------------------- */
-
-/**
- * Recibe el texto crudo del OCR, lo limpia y busca 3 líneas de ~30
- * caracteres correspondientes al formato TD1. Valida el número de
- * documento con su dígito de control. Retorna null si no logra
- * reconstruir una MRZ plausible.
- */
-function extraerMrz(textoCrudo){
-  const lineasCrudas = textoCrudo
-    .toUpperCase()
-    .split(/\r?\n/)
-    .map(l => l.replace(/[^A-Z0-9<]/g, ''))
-    .filter(l => l.length >= 20); // descarta ruido muy corto
-
-  if (lineasCrudas.length < 3) return null;
-
-  // Toma las últimas 3 líneas plausibles (por si el OCR agregó ruido arriba)
-  const lineas = lineasCrudas.slice(-3).map(ajustarA30);
-
-  const linea1 = lineas[0], linea2 = lineas[1], linea3 = lineas[2];
-
-  const docNumeroRaw = linea1.substr(5, 9);
-  const docNumeroCheck = linea1.substr(14, 1);
-  const cedula = docNumeroRaw.replace(/</g, '').trim();
-
-  if (!/^[0-9]{6,9}$/.test(cedula)) return null; // no parece un número de cédula válido
-
-  const checkCalculado = calcularDigitoControl(docNumeroRaw);
-  const checkEsperado = docNumeroCheck === '<' ? 0 : parseInt(docNumeroCheck, 10);
-  const checksumValido = !isNaN(checkEsperado) && checkCalculado === checkEsperado;
-
-  const nombresRaw = linea3.replace(/</g, ' ').trim();
-
-  return {
-    cedula: cedula,
-    checksumValido: checksumValido,
-    nombres: nombresRaw
-  };
-}
-
-function ajustarA30(linea){
-  if (linea.length === 30) return linea;
-  if (linea.length > 30) return linea.substr(0, 30);
-  return linea.padEnd(30, '<');
-}
-
-/** Algoritmo de dígito de control ICAO 9303 (pesos 7,3,1 cíclicos). */
-function calcularDigitoControl(cadena){
-  const pesos = [7, 3, 1];
-  let suma = 0;
-  for (let i = 0; i < cadena.length; i++) {
-    suma += valorCaracterMrz(cadena[i]) * pesos[i % 3];
-  }
-  return suma % 10;
-}
-function valorCaracterMrz(caracter){
-  if (caracter === '<') return 0;
-  if (caracter >= '0' && caracter <= '9') return caracter.charCodeAt(0) - 48;
-  if (caracter >= 'A' && caracter <= 'Z') return caracter.charCodeAt(0) - 65 + 10;
-  return 0;
-}
-
-/* -------------------- Confirmación visual antes de marcar -------------------- */
-function mostrarConfirmacionMrz(mrz){
-  const el = document.getElementById('pantallaConfirmacion');
-  const elCedula = document.getElementById('cedulaDetectada');
-  elCedula.textContent = formatearCedula(mrz.cedula);
-
-  if (!mrz.checksumValido) {
-    elCedula.textContent += ' ⚠️';
-    document.getElementById('estadoCamaraMrz').textContent = 'El dígito de control no coincide, verifique con cuidado antes de confirmar.';
-  }
-  el.classList.add('visible');
-}
-function formatearCedula(digitos){
-  if (digitos.length === 9) return digitos[0] + '-' + digitos.substr(1,4) + '-' + digitos.substr(5,4);
-  return digitos;
-}
-function reintentarMrz(){
-  document.getElementById('pantallaConfirmacion').classList.remove('visible');
-  cedulaCandidataMrz = null;
-}
-async function confirmarMrz(){
-  document.getElementById('pantallaConfirmacion').classList.remove('visible');
-  if (!cedulaCandidataMrz) return;
-
-  mostrarOverlay('overlayProcesandoMrz', true);
-  document.getElementById('mensajeProcesandoMrz').textContent = 'Registrando marcaje...';
-
-  try {
-    const respuesta = await enviarMarcaje(cedulaCandidataMrz);
-    manejarRespuesta(respuesta, () => mostrarOverlay('overlayProcesandoMrz', false), () => {});
-  } catch (error) {
-    console.error(error);
-    manejarRespuesta({ status:'ERROR', message:'No se pudo conectar con el servidor.' },
-      () => mostrarOverlay('overlayProcesandoMrz', false), () => {});
-  }
-  cedulaCandidataMrz = null;
-}
-function irATeclado(){
-  document.getElementById('pantallaConfirmacion').classList.remove('visible');
-  cambiarModo('teclado');
-}
-
-/* =========================================================================
-   MODO 3 · TECLADO NUMÉRICO (respaldo manual)
+   TECLADO NUMÉRICO
    ========================================================================= */
 function actualizarPantallaTeclado(){
   const el = document.getElementById('pantallaTeclado');
@@ -720,126 +388,76 @@ function actualizarPantallaTeclado(){
     el.textContent = 'Ej. 1-2345-6789';
     el.classList.add('vacio');
   } else {
-    el.textContent = cedulaTecladoActual.length === 9 ? formatearCedula(cedulaTecladoActual) : cedulaTecladoActual;
+    el.textContent = cedulaTecladoActual;
     el.classList.remove('vacio');
   }
 }
-function teclaPresionada(digito){
-  if (cedulaTecladoActual.length >= 12) return;
-  cedulaTecladoActual += digito;
-  actualizarPantallaTeclado();
-}
-function borrarTeclado(){
-  cedulaTecladoActual = cedulaTecladoActual.slice(0, -1);
-  actualizarPantallaTeclado();
-}
-function limpiarTeclado(){
-  cedulaTecladoActual = '';
-  actualizarPantallaTeclado();
-}
+function teclaPresionada(d){ if(cedulaTecladoActual.length < 12) cedulaTecladoActual += d; actualizarPantallaTeclado(); }
+function borrarTeclado(){ cedulaTecladoActual = cedulaTecladoActual.slice(0, -1); actualizarPantallaTeclado(); }
+function limpiarTeclado(){ cedulaTecladoActual = ''; actualizarPantallaTeclado(); }
+
 async function enviarDesdeTeclado(){
-  if (!cedulaTecladoActual || cedulaTecladoActual.length < 6) {
-    document.getElementById('pantallaTeclado').style.color = 'var(--error-500)';
-    setTimeout(() => { document.getElementById('pantallaTeclado').style.color = ''; }, 600);
-    return;
-  }
+  if (!cedulaTecladoActual || cedulaTecladoActual.length < 6) return;
   const cedula = cedulaTecladoActual;
   limpiarTeclado();
 
-  mostrarOverlay('overlayProcesandoBarcode', false); // no aplica aquí, pero limpia estado
   try {
     const respuesta = await enviarMarcaje(cedula);
     manejarRespuesta(respuesta, () => {}, () => {});
   } catch (error) {
-    console.error(error);
     manejarRespuesta({ status:'ERROR', message:'No se pudo conectar con el servidor.' }, () => {}, () => {});
   }
 }
 
 /* =========================================================================
-   COMUNICACIÓN CON EL BACKEND
+   BACKEND Y MUESTRA DE RESULTADOS
    ========================================================================= */
 async function enviarMarcaje(cedula){
   const respuesta = await fetch(URL_APPS_SCRIPT, {
     method: 'POST',
     mode: 'cors',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ cedula: cedula })
+    body: JSON.stringify({ cedula: cedula, tipo: tipoSeleccionado })
   });
-  if (!respuesta.ok) throw new Error('Respuesta HTTP no válida: ' + respuesta.status);
+  if (!respuesta.ok) throw new Error('Respuesta no válida: ' + respuesta.status);
   return respuesta.json();
 }
 
-/* =========================================================================
-   UI COMPARTIDA: OVERLAY / RESULTADO
-   ========================================================================= */
-function mostrarOverlay(id, activo){
-  document.getElementById(id).classList.toggle('activo', activo);
-}
+function mostrarOverlay(activo){ document.getElementById('overlayProcesando').classList.toggle('activo', activo); }
 
 const ETIQUETAS_TIPO = {
-  ENTRADA:'ENTRADA', INICIO_ALMUERZO:'INICIO DE ALMUERZO', FIN_ALMUERZO:'FIN DE ALMUERZO',
-  SALIDA:'SALIDA', MARCA_EXTRA:'MARCA REGISTRADA'
+  ENTRADA:'ENTRADA', INICIO_ALMUERZO:'INICIO DE ALMUERZO',
+  FIN_ALMUERZO:'FIN DE ALMUERZO', SALIDA:'SALIDA'
 };
 
 function manejarRespuesta(respuesta, ocultarOverlay, alTerminar){
   ocultarOverlay();
 
   if (respuesta && respuesta.status === 'SUCCESS') {
-    mostrarPantallaExito(respuesta);
-  } else if (respuesta && respuesta.status === 'NOT_FOUND') {
-    mostrarPantallaError('Cédula no registrada', 'Consulte con la persona encargada.');
+    sonidoExito();
+    elPantallaResultado.className = 'pantalla-resultado exito visible';
+    elIconoResultado.innerHTML = SVG_CHECK;
+    elResultadoNombre.textContent = respuesta.nombre || '';
+    elResultadoTipo.textContent = ETIQUETAS_TIPO[respuesta.tipo] || respuesta.tipo;
+    elResultadoHora.textContent = 'Hora: ' + (respuesta.hora || '');
+    elResultadoMensaje.style.display = 'none';
   } else {
-    mostrarPantallaError('No se pudo registrar', (respuesta && respuesta.message) || 'Intente de nuevo.');
+    sonidoError();
+    elPantallaResultado.className = 'pantalla-resultado error visible';
+    elIconoResultado.innerHTML = SVG_EQUIS;
+    elResultadoNombre.textContent = respuesta.status === 'NOT_FOUND' ? 'Cédula no registrada' : 'Error al registrar';
+    elResultadoMensaje.textContent = respuesta.message || 'Intente de nuevo.';
+    elResultadoMensaje.style.display = 'block';
   }
 
-  setTimeout(() => { reiniciarResultado(); alTerminar(); }, TIEMPO_RESULTADO_MS);
+  setTimeout(() => {
+    elPantallaResultado.classList.remove('visible');
+    alTerminar();
+  }, TIEMPO_RESULTADO_MS);
 }
 
-function mostrarPantallaExito(respuesta){
-  sonidoExito();
-  elPantallaResultado.classList.remove('error'); elPantallaResultado.classList.add('exito');
-  elIconoResultado.innerHTML = SVG_CHECK;
-  elResultadoNombre.style.display = 'block'; elResultadoTipo.style.display = 'inline-block';
-  elResultadoHora.style.display = 'block'; elResultadoMensaje.style.display = 'none';
-  elResultadoNombre.textContent = respuesta.nombre || '';
-  elResultadoTipo.textContent = ETIQUETAS_TIPO[respuesta.tipo] || respuesta.tipo || '';
-  elResultadoHora.textContent = 'Hora: ' + (respuesta.hora || '');
-  reiniciarBarraProgreso();
-  elPantallaResultado.classList.add('visible');
-}
-function mostrarPantallaError(titulo, mensaje){
-  sonidoError();
-  elPantallaResultado.classList.remove('exito'); elPantallaResultado.classList.add('error');
-  elIconoResultado.innerHTML = SVG_EQUIS;
-  elResultadoNombre.style.display = 'block'; elResultadoTipo.style.display = 'none';
-  elResultadoHora.style.display = 'none'; elResultadoMensaje.style.display = 'block';
-  elResultadoNombre.textContent = titulo;
-  elResultadoMensaje.textContent = mensaje;
-  reiniciarBarraProgreso();
-  elPantallaResultado.classList.add('visible');
-}
-function reiniciarBarraProgreso(){
-  const nueva = elBarraProgreso.cloneNode(true);
-  elBarraProgreso.parentNode.replaceChild(nueva, elBarraProgreso);
-}
-function reiniciarResultado(){
-  elPantallaResultado.classList.remove('visible');
-  if (modoActual === 'barcode') document.getElementById('estadoCamaraBarcode').textContent = 'Listo para escanear';
-  if (modoActual === 'mrz') document.getElementById('estadoCamaraMrz').textContent = 'Listo. Alinee el reverso y capture.';
-}
-
-/* =========================================================================
-   ARRANQUE
-   ========================================================================= */
-window.addEventListener('load', () => {
-  iniciarLectorBarcode();
-});
-document.addEventListener('click', () => {
-  const ctx = obtenerContextoAudio();
-  if (ctx.state === 'suspended') ctx.resume();
-}, { once:true });
+/* ARRANQUE INICIAL */
+window.addEventListener('load', iniciarLectorQr);
 </script>
-
 </body>
 </html>
