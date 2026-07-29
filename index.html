@@ -10,14 +10,17 @@
     
     .container { background: #ffffff; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 480px; text-align: center; }
     
-    .badge-location { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 50px; font-size: 0.95rem; font-weight: bold; margin-bottom: 20px; background: #fff3cd; color: #856404; }
+    .badge-location { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 50px; font-size: 0.95rem; font-weight: bold; margin-bottom: 15px; background: #fff3cd; color: #856404; }
     .badge-location.ok { background: #d4edda; color: #155724; }
     .badge-location.error { background: #f8d7da; color: #721c24; }
 
+    .device-info { font-size: 0.8rem; color: #6c757d; margin-bottom: 15px; font-style: italic; }
+
     .display-cedula { width: 100%; height: 60px; font-size: 2rem; font-weight: bold; text-align: center; border: 2px solid #ccc; border-radius: 12px; margin-bottom: 20px; background: #fafafa; letter-spacing: 2px; }
+    .display-cedula:read-only { background: #e9ecef; color: #495057; }
 
     .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-    .btn-key { background: #e9ecef; border: none; padding: 18px; font-size: 1.8rem; font-weight: bold; border-radius: 12px; cursor: pointer; color: #333; active-scale: 0.95; }
+    .btn-key { background: #e9ecef; border: none; padding: 18px; font-size: 1.8rem; font-weight: bold; border-radius: 12px; cursor: pointer; color: #333; }
     .btn-key:active { background: #ced4da; }
     .btn-clear { background: #ffe3e3; color: #d90429; }
     .btn-delete { background: #fff3bf; color: #f59f00; }
@@ -30,18 +33,19 @@
     .card-result { background: white; padding: 30px; border-radius: 20px; text-align: center; width: 100%; max-width: 400px; }
     .card-result.success { border-top: 10px solid #2b8a3e; }
     .card-result.error { border-top: 10px solid #d90429; }
-    .card-result h2 { margin: 10px 0; font-size: 2rem; }
-    .card-result p { font-size: 1.2rem; color: #555; margin: 8px 0; }
+    .card-result h2 { margin: 10px 0; font-size: 1.8rem; }
+    .card-result p { font-size: 1.1rem; color: #555; margin: 8px 0; }
   </style>
 </head>
 <body>
 
   <div class="container">
     <div id="badge-gps" class="badge-location">📍 Obteniendo ubicación GPS...</div>
+    <div id="device-info" class="device-info">Dispositivo seguro vinculado</div>
 
     <input type="text" id="cedula-input" class="display-cedula" readonly placeholder="Cédula">
 
-    <div class="keypad">
+    <div id="keypad" class="keypad">
       <button class="btn-key" onclick="pressNum('1')">1</button>
       <button class="btn-key" onclick="pressNum('2')">2</button>
       <button class="btn-key" onclick="pressNum('3')">3</button>
@@ -70,10 +74,9 @@
 
   <script>
     // ⚠️ REEMPLAZA CON LA URL OBTENIDA DE GOOGLE APPS SCRIPT
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwMEybubG_a-jntTzJJum3dUHDer1wUttv5OvFDMl6ojjnj4Q-zXdG1MVuzR-Yyd26n/exec";
+    const WEB_APP_URL = "COLOCA_AQUI_TU_URL_DE_APPS_SCRIPT";
 
-    // Ubicaciones autorizadas en Costa Rica (Radio: ~500 metros = 0.5 km)
-const PLAZAS = [
+    const PLAZAS = [
       { nombre: "Multiplaza Escazú", lat: 9.94506212827314, lng: -84.15205751759024 },
       { nombre: "Multiplaza Curridabat", lat: 9.917243975407315, lng: -84.04671783293279 },
       { nombre: "Paseo las Flores", lat: 9.985381654337761, lng: -84.11120067526092 },
@@ -86,8 +89,28 @@ const PLAZAS = [
 
     let ubicacionDetectada = null;
     let coordsDetectadas = "";
+    let deviceId = "";
 
-    // 1. Obtener Geolocalización
+    // 1. Obtener o Generar UUID único del teléfono
+    function inicializarDeviceId() {
+      deviceId = localStorage.getItem("app_device_id");
+      if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem("app_device_id", deviceId);
+      }
+
+      // Si ya hay una cédula guardada en este teléfono, se fija automáticamente
+      const cedulaGuardada = localStorage.getItem("app_user_cedula");
+      if (cedulaGuardada) {
+        document.getElementById("cedula-input").value = cedulaGuardada;
+        document.getElementById("keypad").style.display = "none"; // Se oculta el teclado
+        document.getElementById("device-info").innerText = "🔒 Dispositivo vinculado a cédula: " + cedulaGuardada;
+      } else {
+        document.getElementById("device-info").innerText = "📱 Dispositivo nuevo (se vinculará al primer marcaje)";
+      }
+    }
+
+    // 2. Obtener Geolocalización
     function obtenerUbicacion() {
       const badge = document.getElementById("badge-gps");
       
@@ -133,7 +156,6 @@ const PLAZAS = [
       );
     }
 
-    // Fórmula Haversine para distancia en kilómetros
     function calcularDistanciaKM(lat1, lon1, lat2, lon2) {
       const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -144,7 +166,7 @@ const PLAZAS = [
       return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
     }
 
-    // 2. Control de Teclado
+    // 3. Teclado Numérico
     function pressNum(num) {
       const input = document.getElementById("cedula-input");
       if (input.value.length < 15) input.value += num;
@@ -157,7 +179,7 @@ const PLAZAS = [
       document.getElementById("cedula-input").value = "";
     }
 
-    // 3. Audio de Confirmación (Web Audio API)
+    // 4. Sonido Beep
     function playBeep(type) {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = ctx.createOscillator();
@@ -166,17 +188,17 @@ const PLAZAS = [
       gain.connect(ctx.destination);
 
       if (type === 'success') {
-        osc.frequency.value = 587.33; // Tono agudo
+        osc.frequency.value = 587.33;
         osc.start();
         setTimeout(() => osc.stop(), 200);
       } else {
-        osc.frequency.value = 220; // Tono grave
+        osc.frequency.value = 220;
         osc.start();
         setTimeout(() => osc.stop(), 400);
       }
     }
 
-    // 4. Enviar Petición
+    // 5. Enviar Marcaje
     async function enviarMarca() {
       const cedula = document.getElementById("cedula-input").value.trim();
       if (!cedula) return alert("Por favor digite un número de cédula.");
@@ -190,12 +212,21 @@ const PLAZAS = [
           method: "POST",
           body: JSON.stringify({
             cedula: cedula,
+            deviceId: deviceId,
             ubicacion: ubicacionDetectada,
             coords: coordsDetectadas
           })
         });
 
         const res = await response.json();
+        
+        // Si el servidor confirma el marcaje, recordamos la cédula fijada en este teléfono
+        if (res.status === "SUCCESS") {
+          localStorage.setItem("app_user_cedula", cedula);
+          document.getElementById("keypad").style.display = "none";
+          document.getElementById("device-info").innerText = "🔒 Dispositivo vinculado a cédula: " + cedula;
+        }
+
         mostrarResultado(res);
 
       } catch (err) {
@@ -203,7 +234,6 @@ const PLAZAS = [
       } finally {
         btn.disabled = false;
         btn.innerText = "MARCAR INGRESO / SALIDA";
-        clearAll();
       }
     }
 
@@ -232,8 +262,10 @@ const PLAZAS = [
       setTimeout(() => { overlay.style.display = "none"; }, 3500);
     }
 
-    // Inicializar GPS al cargar la página
-    window.onload = obtenerUbicacion;
+    window.onload = () => {
+      inicializarDeviceId();
+      obtenerUbicacion();
+    };
   </script>
 </body>
 </html>
